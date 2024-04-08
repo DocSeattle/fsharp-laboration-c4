@@ -1,0 +1,89 @@
+﻿@inject GameState State
+
+<HeadContent>
+    <style>
+        :root {
+            --board-bg: black;
+            --player1: green;
+            --player2: purple;
+        }
+    </style>
+</HeadContent>
+
+<div>
+    <article style="margin-bottom: 1.25em;">
+        @winnerMessage <button style="@ResetStyle; " @onclick="ResetGame">Reset the game</button>
+        <br />
+        <span class="alert-danger">@errorMessage</span>
+        <span class="alert-info">@currentTurn</span>
+    </article>
+    <nav>
+        @for (byte i = 0; i < 7; i++)
+        {
+            var col = i;
+            <span title="Click to play a piece" @onclick="() => PlayPiece(col)">🔽</span>
+        }
+    </nav>
+   
+    <div class="board">
+        @for (var i = 0; i < 42; i++)
+        {
+            <span class="container">
+                <span></span>
+            </span>
+        }
+    </div>
+    @for (var i = 0; i < 42; i++)
+    {
+        <span class="@pieces[i]"></span>
+    }
+</div>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        State.ResetBoard();
+    }
+
+    private string[] pieces = new string[42];
+
+    private string winnerMessage = string.Empty;
+    private string currentTurn => (winnerMessage == string.Empty) ? $"Player {State.PlayerTurn}'s turn." : "";
+    private string ResetStyle => (winnerMessage == string.Empty) ? "display: none;" : "";
+    private string errorMessage = string.Empty;
+
+    private void PlayPiece(byte col)
+    {
+        winnerMessage = string.Empty;
+        errorMessage = string.Empty;
+        try{
+            var player = State.PlayerTurn;
+            var turn = State.CurrentTurn;
+            var landingRow = State.PlayPiece(col);
+            pieces[turn] = $"player{player} col{col} drop{landingRow}";
+        }
+        catch (ArgumentException ex)
+        {
+            errorMessage = ex.Message;
+        }
+    
+        winnerMessage = State.CheckForWin() switch
+        {
+            GameState.WinState.Player1_Wins => "Player 1 Wins!",
+            GameState.WinState.Player2_Wins => "Player 2 Wins!",
+            GameState.WinState.Tie => "It's a tie!",
+            _ => ""
+        };
+    }
+
+
+
+    void ResetGame()
+    {
+        State.ResetBoard();
+        winnerMessage = string.Empty;
+        errorMessage = string.Empty;
+        pieces = new string[42];
+    }
+}
